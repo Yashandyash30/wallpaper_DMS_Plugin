@@ -4,6 +4,8 @@ A DankMaterialShell (DMS) composite plugin that adds a multi-monitor wallpaper b
 
 Works on Niri, Hyprland, and other Wayland compositors supported by DMS while preserving DMS wallpaper transitions and Matugen theme generation.
 
+![Wallpaper Span UI](screenshot.png)
+
 ## Features
 
 - **Physical-space alignment ([Spanright](https://github.com/andresjmorales/spanright) method)**: Uses monitor physical dimensions from EDID (`physical_size` on Niri / `physicalPixelDensity`), physical bezel gap (`mm`), and per-display vertical offset so objects stay the same real-world size across mixed-DPI screens and cross bezels smoothly.
