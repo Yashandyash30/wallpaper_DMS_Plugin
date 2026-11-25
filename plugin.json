@@ -1,0 +1,31 @@
+{
+    "$schema": "https://duxlabs.dev/schemas/plugin.json",
+    "id": "wallpaperSpan",
+    "name": "Wallpaper Span",
+    "description": "Multi-monitor wallpaper browser with automatic wide-wallpaper spanning, same-on-all, and per-display modes",
+    "version": "1.0.0",
+    "author": "Yashandyash30",
+    "icon": "panorama",
+    "type": "composite",
+    "capabilities": [
+        "wallpaper",
+        "daemon",
+        "dankbar-widget",
+        "control-center"
+    ],
+    "components": {
+        "widget": "./WallpaperSpanWidget.qml",
+        "daemon": "./WallpaperSpanDaemon.qml"
+    },
+    "settings": "./WallpaperSpanSettings.qml",
+    "startupCheck": "./StartupCheck.qml",
+    "requires_dms": ">=1.7.0",
+    "dependencies": [
+        "imagemagick"
+    ],
+    "permissions": [
+        "settings_read",
+        "settings_write",
+        "process"
+    ]
+}
