@@ -419,7 +419,7 @@ Item {
                 Item {
                     id: stageCanvas
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 132
+                    Layout.preferredHeight: Theme.listItemHeight * 2 + Theme.spacingL
                     clip: true
 
                     readonly property bool usePhysical: SpanController.fitModeFromData(root.effectivePluginData) === "physical"
@@ -508,7 +508,7 @@ Item {
                             height: Math.max(50, (stageCanvas.usePhysical ? (modelData.physH || modelData.height) : modelData.height) * stageCanvas.fitScale)
                             radius: Theme.cornerRadiusS
                             color: Theme.chipSurface
-                            border.width: isTargeted ? 2 : (root.selectedTarget === "all" ? 1.5 : Theme.outlineWidth)
+                            border.width: isTargeted ? Theme.outlineWidthFocused : Theme.outlineWidth
                             border.color: isActiveInStage ? Theme.primary : Theme.outlineVariant
                             opacity: isActiveInStage ? 1.0 : 0.55
                             clip: true
@@ -539,10 +539,10 @@ Item {
                             StyledRect {
                                 anchors.top: parent.top
                                 anchors.right: parent.right
-                                anchors.margins: 5
-                                width: offBadgeText.implicitWidth + 10
-                                height: 18
-                                radius: 9
+                                anchors.margins: Theme.spacingXS
+                                width: offBadgeText.implicitWidth + Theme.spacingS
+                                height: offBadgeText.implicitHeight + Theme.spacingXS
+                                radius: Theme.cornerRadiusFull
                                 color: Theme.primary
                                 visible: monScreen.offVal !== 0
 
@@ -550,7 +550,7 @@ Item {
                                     id: offBadgeText
                                     anchors.centerIn: parent
                                     text: root.formatOffset(monScreen.offVal)
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.fontSizeXSmall
                                     font.weight: Font.Bold
                                     color: Theme.onPrimary
                                 }
@@ -560,13 +560,13 @@ Item {
                             Row {
                                 anchors.top: parent.top
                                 anchors.left: parent.left
-                                anchors.margins: 5
-                                spacing: 4
+                                anchors.margins: Theme.spacingXS
+                                spacing: Theme.spacingXS
 
                                 StyledRect {
-                                    width: targetTag.implicitWidth + 10
-                                    height: 18
-                                    radius: 9
+                                    width: targetTag.implicitWidth + Theme.spacingS
+                                    height: targetTag.implicitHeight + Theme.spacingXS
+                                    radius: Theme.cornerRadiusFull
                                     color: Theme.primary
                                     visible: monScreen.isTargeted
 
@@ -574,7 +574,7 @@ Item {
                                         id: targetTag
                                         anchors.centerIn: parent
                                         text: "TARGET"
-                                        font.pixelSize: 9
+                                        font.pixelSize: Theme.fontSizeXSmall
                                         font.weight: Font.Bold
                                         color: Theme.onPrimary
                                     }
@@ -586,9 +586,9 @@ Item {
                                         NiriService.windows;
                                         return monScreen.liveVideo !== "" && !root.videoPaused && root.isNiriColumnPaused(monScreen.modelData.name);
                                     }
-                                    width: stageLiveTag.implicitWidth + 10
-                                    height: 18
-                                    radius: 9
+                                    width: stageLiveTag.implicitWidth + Theme.spacingS
+                                    height: stageLiveTag.implicitHeight + Theme.spacingXS
+                                    radius: Theme.cornerRadiusFull
                                     color: (root.videoPaused || colPaused) ? Theme.secondaryContainer : Theme.primary
                                     visible: monScreen.liveVideo !== ""
 
@@ -596,7 +596,7 @@ Item {
                                         id: stageLiveTag
                                         anchors.centerIn: parent
                                         text: root.videoPaused ? "PAUSED" : (parent.colPaused ? "PAUSED · COL" : "LIVE")
-                                        font.pixelSize: 9
+                                        font.pixelSize: Theme.fontSizeXSmall
                                         font.weight: Font.Bold
                                         color: (root.videoPaused || parent.colPaused) ? Theme.onSecondaryContainer : Theme.onPrimary
                                     }
@@ -608,19 +608,20 @@ Item {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
-                                height: 22
-                                color: Qt.rgba(0, 0, 0, 0.65)
+                                height: stageMonLabel.implicitHeight + Theme.spacingS
+                                color: Theme.withAlpha(Theme.surface, 0.8)
 
                                 StyledText {
+                                    id: stageMonLabel
                                     anchors.fill: parent
-                                    anchors.leftMargin: 6
-                                    anchors.rightMargin: 6
+                                    anchors.leftMargin: Theme.spacingXS
+                                    anchors.rightMargin: Theme.spacingXS
                                     verticalAlignment: Text.AlignVCenter
                                     horizontalAlignment: Text.AlignHCenter
                                     text: (monScreen.index + 1) + ". " + monScreen.modelData.name + " · " + monScreen.modelData.width + "×" + monScreen.modelData.height + (monScreen.modelData.diagInches ? (" (" + monScreen.modelData.diagInches + "\")") : "")
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.fontSizeXSmall
                                     font.weight: Font.Medium
-                                    color: "#ffffff"
+                                    color: Theme.surfaceText
                                     elide: Text.ElideRight
                                 }
                             }
@@ -642,7 +643,7 @@ Item {
                     DButton {
                         text: root.monitors.length > 1 ? ("All (" + root.monitors.length + ")") : "All"
                         iconName: "desktop_windows"
-                        buttonHeight: 26
+                        buttonHeight: Theme.buttonHeightXXS
                         minimumWidth: 78
                         variant: root.selectedTarget === "all" ? "filled" : "tonal"
                         tooltipText: "Select all displays (Span / Same)"
@@ -680,7 +681,7 @@ Item {
                         visible: root.monitors.length > 1
                         text: "Align"
                         iconName: "vertical_align_center"
-                        buttonHeight: 26
+                        buttonHeight: Theme.buttonHeightXXS
                         minimumWidth: 74
                         variant: (root.showAlignBar || root.hasAnyOffset()) ? "filled" : "tonal"
                         tooltipText: "Vertical alignment per display"
@@ -717,7 +718,7 @@ Item {
                         readonly property int offVal: root.offsetFor(modelData.name)
 
                         width: alignChipRow.implicitWidth + Theme.spacingS * 2
-                        height: 30
+                        height: alignChipRow.implicitHeight + Theme.spacingXS * 2
                         radius: Theme.cornerRadiusS
                         color: Theme.chipSurface
                         border.width: Theme.outlineWidth
@@ -726,12 +727,12 @@ Item {
                         Row {
                             id: alignChipRow
                             anchors.centerIn: parent
-                            spacing: 4
+                            spacing: Theme.spacingXS
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: alignChip.modelData.name
-                                font.pixelSize: 11
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.weight: Font.DemiBold
                                 color: Theme.onSurface
                             }
@@ -739,7 +740,7 @@ Item {
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: root.formatOffset(alignChip.offVal)
-                                font.pixelSize: 11
+                                font.pixelSize: Theme.fontSizeSmall
                                 color: alignChip.offVal !== 0 ? Theme.primary : Theme.onSurfaceVariant
                                 width: 46
                                 horizontalAlignment: Text.AlignHCenter
@@ -748,7 +749,7 @@ Item {
                             DButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↓10"
-                                buttonHeight: 22
+                                buttonHeight: Theme.buttonHeightXXS
                                 minimumWidth: 34
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper down 10 px"
@@ -758,7 +759,7 @@ Item {
                             DButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↓2"
-                                buttonHeight: 22
+                                buttonHeight: Theme.buttonHeightXXS
                                 minimumWidth: 30
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper down 2 px"
@@ -768,7 +769,7 @@ Item {
                             DButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↑2"
-                                buttonHeight: 22
+                                buttonHeight: Theme.buttonHeightXXS
                                 minimumWidth: 30
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper up 2 px"
@@ -778,7 +779,7 @@ Item {
                             DButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↑10"
-                                buttonHeight: 22
+                                buttonHeight: Theme.buttonHeightXXS
                                 minimumWidth: 34
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper up 10 px"
@@ -790,7 +791,7 @@ Item {
 
                 StyledRect {
                     width: bezelRow.implicitWidth + Theme.spacingS * 2
-                    height: 30
+                    height: bezelRow.implicitHeight + Theme.spacingXS * 2
                     radius: Theme.cornerRadiusS
                     color: Theme.chipSurface
                     border.width: Theme.outlineWidth
@@ -799,12 +800,12 @@ Item {
                     Row {
                         id: bezelRow
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: Theme.spacingXS
 
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Gap"
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.fontSizeSmall
                             font.weight: Font.DemiBold
                             color: Theme.onSurface
                         }
@@ -812,7 +813,7 @@ Item {
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.localBezelGapMm + " mm"
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.fontSizeSmall
                             color: root.localBezelGapMm > 0 ? Theme.primary : Theme.onSurfaceVariant
                             width: 40
                             horizontalAlignment: Text.AlignHCenter
@@ -821,7 +822,7 @@ Item {
                         DButton {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "-2"
-                            buttonHeight: 22
+                            buttonHeight: Theme.buttonHeightXXS
                             minimumWidth: 28
                             variant: "tonal"
                             tooltipText: "Decrease physical bezel gap 2 mm"
@@ -831,7 +832,7 @@ Item {
                         DButton {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "+2"
-                            buttonHeight: 22
+                            buttonHeight: Theme.buttonHeightXXS
                             minimumWidth: 28
                             variant: "tonal"
                             tooltipText: "Increase physical bezel gap 2 mm"
@@ -843,8 +844,8 @@ Item {
                 DButton {
                     visible: root.hasAnyOffset()
                     text: "Reset"
-                    buttonHeight: 30
-                    minimumWidth: 58
+                    buttonHeight: Theme.buttonHeightXS
+                    minimumWidth: Theme.buttonMinWidth
                     variant: "tonal"
                     onClicked: root.resetAllOffsets()
                 }
@@ -855,7 +856,7 @@ Item {
         StyledRect {
             id: liveBar
             Layout.fillWidth: true
-            Layout.preferredHeight: 38
+            Layout.preferredHeight: Theme.buttonHeightS
             visible: root.activeLivePath !== ""
             radius: Theme.cornerRadius
             color: Theme.cardSurface
@@ -892,21 +893,21 @@ Item {
 
                 DActionButton {
                     iconName: root.videoPaused ? "play_arrow" : "pause"
-                    buttonSize: 28
+                    buttonSize: Theme.buttonHeightXXS
                     tooltipText: root.videoPaused ? "Resume live wallpaper" : "Pause live wallpaper"
                     onClicked: SpanController.setVideosPaused(!root.videoPaused)
                 }
 
                 DActionButton {
                     iconName: "stop"
-                    buttonSize: 28
+                    buttonSize: Theme.buttonHeightXXS
                     tooltipText: root.selectedTarget === "all" ? "Stop live wallpaper on all displays" : ("Stop live wallpaper on " + root.selectedTarget)
                     onClicked: SpanController.stopVideos(root.selectedTarget === "all" ? null : [root.selectedTarget])
                 }
 
                 DButton {
                     text: liveBar.liveSettings.panscan >= 0.9 ? "Fill" : (liveBar.liveSettings.panscan <= 0.1 ? "Fit" : "50%")
-                    buttonHeight: 24
+                    buttonHeight: Theme.buttonHeightXXS
                     minimumWidth: 44
                     variant: "tonal"
                     tooltipText: "Cycle video fill mode (Fill / Balance / Fit)"
@@ -919,7 +920,7 @@ Item {
 
                 DActionButton {
                     iconName: liveBar.liveSettings.volume > 0 ? "volume_up" : "volume_off"
-                    buttonSize: 28
+                    buttonSize: Theme.buttonHeightXXS
                     tooltipText: liveBar.liveSettings.volume > 0 ? "Mute video" : "Unmute video (25%)"
                     onClicked: {
                         const nextVol = liveBar.liveSettings.volume > 0 ? 0 : 25;
@@ -949,7 +950,7 @@ Item {
 
             StyledRect {
                 Layout.preferredWidth: 170
-                Layout.preferredHeight: 34
+                Layout.preferredHeight: Theme.buttonHeightXS
                 radius: Theme.cornerRadius
                 color: Theme.chipSurface
                 border.width: Theme.outlineWidth
@@ -989,7 +990,7 @@ Item {
 
             DActionButton {
                 iconName: "refresh"
-                buttonSize: 34
+                buttonSize: Theme.buttonHeightXS
                 tooltipText: "Rescan folder"
                 onClicked: root.scanFolder()
             }
@@ -997,7 +998,7 @@ Item {
             DSearchField {
                 id: searchField
                 Layout.fillWidth: true
-                fieldHeight: 34
+                fieldHeight: Theme.buttonHeightXS
                 placeholderText: "Search..."
                 onTextChanged: {
                     root.searchQuery = text;
@@ -1006,8 +1007,8 @@ Item {
             }
 
             StyledRect {
-                Layout.preferredWidth: filterRow.implicitWidth + 6
-                Layout.preferredHeight: 34
+                Layout.preferredWidth: filterRow.implicitWidth + Theme.spacingXS * 2
+                Layout.preferredHeight: Theme.buttonHeightXS
                 radius: Theme.cornerRadius
                 color: Theme.chipSurface
                 border.width: Theme.outlineWidth
@@ -1016,7 +1017,7 @@ Item {
                 Row {
                     id: filterRow
                     anchors.centerIn: parent
-                    spacing: 2
+                    spacing: Theme.spacingXXS
 
                     Repeater {
                         model: [
@@ -1031,7 +1032,7 @@ Item {
                             readonly property bool active: root.filterMode === modelData.id
 
                             width: chipLabel.implicitWidth + Theme.spacingM
-                            height: 28
+                            height: Theme.buttonHeightXXS
                             radius: Theme.cornerRadiusS
                             color: active ? Theme.secondaryContainer : "transparent"
 
@@ -1110,7 +1111,7 @@ Item {
                         anchors.margins: Theme.spacingXS
                         radius: Theme.cornerRadius
                         color: Theme.cardSurface
-                        border.width: cellRoot.isCurrent ? 2 : Theme.outlineWidth
+                        border.width: cellRoot.isCurrent ? Theme.outlineWidthFocused : Theme.outlineWidth
                         border.color: cellRoot.isCurrent ? Theme.primary : Theme.outlineVariant
                         clip: true
 
@@ -1133,7 +1134,7 @@ Item {
                         DIcon {
                             anchors.centerIn: parent
                             name: "movie"
-                            size: 28
+                            size: Theme.iconSizeLarge
                             color: Theme.onSurfaceVariant
                             visible: cellRoot.isVideo && cardPreview.status !== Image.Ready
                         }
@@ -1148,9 +1149,9 @@ Item {
                         StyledRect {
                             anchors.top: parent.top
                             anchors.left: parent.left
-                            anchors.margins: 6
-                            width: badgeText.implicitWidth + 10
-                            height: 18
+                            anchors.margins: Theme.spacingXS
+                            width: badgeText.implicitWidth + Theme.spacingS
+                            height: badgeText.implicitHeight + Theme.spacingXS
                             radius: Theme.cornerRadiusS
                             color: Theme.primary
                             visible: cellRoot.isWide || cellRoot.isVideo
@@ -1161,7 +1162,7 @@ Item {
                                 text: cellRoot.isVideo
                                     ? (cellRoot.isWide && cellRoot.aspect ? ("LIVE · " + cellRoot.aspect) : "LIVE")
                                     : ("WIDE · " + cellRoot.aspect)
-                                font.pixelSize: 9
+                                font.pixelSize: Theme.fontSizeXSmall
                                 font.weight: Font.Bold
                                 color: Theme.onPrimary
                             }
@@ -1171,17 +1172,17 @@ Item {
                         StyledRect {
                             anchors.top: parent.top
                             anchors.right: parent.right
-                            anchors.margins: 6
-                            width: 20
-                            height: 20
-                            radius: 10
+                            anchors.margins: Theme.spacingXS
+                            width: Theme.iconSizeMedium
+                            height: Theme.iconSizeMedium
+                            radius: Theme.cornerRadiusFull
                             color: Theme.primary
                             visible: cellRoot.isCurrent
 
                             DIcon {
                                 anchors.centerIn: parent
                                 name: "check"
-                                size: 13
+                                size: Theme.iconSizeSmall
                                 color: Theme.onPrimary
                             }
                         }
@@ -1191,33 +1192,34 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.bottom: parent.bottom
-                            height: gridView.showCardActions ? 52 : 24
-                            color: Qt.rgba(0, 0, 0, 0.72)
+                            height: hoverCol.implicitHeight + Theme.spacingXS * 2
+                            color: Theme.withAlpha(Theme.surface, 0.85)
                             visible: cardHover.hovered
 
                             ColumnLayout {
+                                id: hoverCol
                                 anchors.fill: parent
-                                anchors.margins: 5
-                                spacing: 4
+                                anchors.margins: Theme.spacingXS
+                                spacing: Theme.spacingXS
 
                                 StyledText {
                                     Layout.fillWidth: true
                                     text: cellRoot.name
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.fontSizeXSmall
                                     font.weight: Font.Medium
-                                    color: "#ffffff"
+                                    color: Theme.surfaceText
                                     elide: Text.ElideMiddle
                                 }
 
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: Theme.spacingXS
                                     visible: gridView.showCardActions
 
                                     DButton {
                                         Layout.fillWidth: true
                                         text: "Span"
-                                        buttonHeight: 22
+                                        buttonHeight: Theme.buttonHeightXXS
                                         minimumWidth: 42
                                         variant: cellRoot.isWide ? "filled" : "tonal"
                                         onClicked: SpanController.applySpan(cellRoot.path, cellRoot.imgWidth, cellRoot.imgHeight, root.effectivePluginData)
@@ -1226,7 +1228,7 @@ Item {
                                     DButton {
                                         Layout.fillWidth: true
                                         text: "Same"
-                                        buttonHeight: 22
+                                        buttonHeight: Theme.buttonHeightXXS
                                         minimumWidth: 42
                                         variant: "tonal"
                                         onClicked: SpanController.applySameOnAll(cellRoot.path)
@@ -1247,7 +1249,7 @@ Item {
                 DIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     name: root.scanning ? "hourglass_top" : "wallpaper"
-                    size: 40
+                    size: Theme.iconSizeLarge
                     color: Theme.onSurfaceVariant
                 }
 
@@ -1266,8 +1268,8 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottomMargin: Theme.spacingS
                 width: busyRow.implicitWidth + Theme.spacingM * 2
-                height: 32
-                radius: 16
+                height: Theme.buttonHeightXS
+                radius: Theme.cornerRadiusFull
                 color: Theme.primary
                 visible: SpanController.busy
 

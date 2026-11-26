@@ -21,7 +21,7 @@ Works on Niri, Hyprland, and other Wayland compositors supported by DMS while pr
 
 ## Requirements
 
-- DankMaterialShell (DMS / `dux-shell`) `>= 1.7.0`
+- DankMaterialShell (DMS / `dux-shell`) `>= 2.0.0`
 - `imagemagick` (`magick` or `convert`/`identify`) for image dimensions and static spanning
 - Optional for live video wallpapers:
   - [`mpvpaper`](https://github.com/GhostNaN/mpvpaper) for video playback

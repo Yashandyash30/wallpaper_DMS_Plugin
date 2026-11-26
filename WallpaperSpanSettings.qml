@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modules.Plugins
+import qs.Services
 
 PluginSettings {
     id: root
@@ -123,7 +124,7 @@ PluginSettings {
             id: capsCol
             anchors.fill: parent
             anchors.margins: Theme.spacingS
-            spacing: 2
+            spacing: Theme.spacingXXS
 
             StyledText {
                 width: parent.width
@@ -234,7 +235,7 @@ PluginSettings {
             Column {
                 width: parent.width - clearButton.width - Theme.spacingM
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: Theme.spacingXXS
 
                 StyledText {
                     width: parent.width
@@ -281,7 +282,7 @@ PluginSettings {
             Column {
                 width: parent.width - resetOffsetsButton.width - Theme.spacingM
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: Theme.spacingXXS
 
                 StyledText {
                     width: parent.width
