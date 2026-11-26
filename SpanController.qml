@@ -95,12 +95,18 @@ Singleton {
         const data = pluginData || ({});
         const all = (data.videoSettings && typeof data.videoSettings === "object") ? data.videoSettings : ({});
         const per = (videoPath && all[videoPath] && typeof all[videoPath] === "object") ? all[videoPath] : ({});
-        const defPanscan = (typeof data.defaultPanscan === "number") ? data.defaultPanscan : 1.0;
-        const defVol = (typeof data.defaultVolume === "number") ? data.defaultVolume : 0;
+        const parsedPanscan = (data.defaultPanscan !== undefined && data.defaultPanscan !== null && data.defaultPanscan !== "")
+            ? Number(data.defaultPanscan)
+            : NaN;
+        const defPanscan = Number.isFinite(parsedPanscan) ? parsedPanscan : 1.0;
+        const parsedVol = (data.defaultVolume !== undefined && data.defaultVolume !== null && data.defaultVolume !== "")
+            ? Number(data.defaultVolume)
+            : NaN;
+        const defVol = Number.isFinite(parsedVol) ? parsedVol : 0;
         return {
             hwdec: per.hwdec || data.defaultHwdec || "auto",
-            panscan: (per.panscan !== undefined && per.panscan !== null) ? Number(per.panscan) : defPanscan,
-            volume: (per.volume !== undefined && per.volume !== null) ? Number(per.volume) : defVol
+            panscan: (per.panscan !== undefined && per.panscan !== null && per.panscan !== "") ? Number(per.panscan) : defPanscan,
+            volume: (per.volume !== undefined && per.volume !== null && per.volume !== "") ? Number(per.volume) : defVol
         };
     }
 
@@ -167,7 +173,7 @@ Singleton {
             if (mpvOk) {
                 onReady();
             } else {
-                ToastService.showError("Wallpaper Span", "Install mpvpaper to play live wallpapers (sudo pacman -S mpvpaper)");
+                ToastService.showError("Install mpvpaper to play live wallpapers", "sudo pacman -S mpvpaper");
             }
         });
     }
@@ -273,7 +279,7 @@ Singleton {
         const isVideo = SpanEngine.isVideoPath(mediaPath);
         const monitors = getMonitors(pluginData);
         if (monitors.length < 2) {
-            ToastService.showInfo("Wallpaper Span", "Only 1 monitor detected — applied normally");
+            ToastService.showInfo("Only 1 monitor detected — applied normally");
             applySameOnAll(mediaPath);
             if (doneCallback)
                 doneCallback(true);
@@ -284,12 +290,12 @@ Singleton {
             probeDimensions(mediaPath, (pw, ph) => {
                 if (pw <= 0 || ph <= 0) {
                     if (isVideo) {
-                        ToastService.showInfo("Wallpaper Span", "Video resolution unknown — playing uniformly");
+                        ToastService.showInfo("Video resolution unknown — playing uniformly");
                         applySameOnAll(mediaPath);
                         if (doneCallback)
                             doneCallback(true);
                     } else {
-                        ToastService.showError("Wallpaper Span", "Could not read image dimensions");
+                        ToastService.showError("Could not read image dimensions");
                         if (doneCallback)
                             doneCallback(false);
                     }
@@ -303,7 +309,7 @@ Singleton {
         if (isVideo) {
             const ok = _applyVideoAll(mediaPath, true, imgW, imgH);
             if (ok)
-                ToastService.showInfo("Wallpaper Span", `Spanning live wallpaper across ${monitors.length} displays`);
+                ToastService.showInfo(`Spanning live wallpaper across ${monitors.length} displays`);
             if (doneCallback)
                 doneCallback(ok);
             return;
@@ -330,7 +336,7 @@ Singleton {
         Proc.runCommand("wallpaperSpan.split", cmd, (output, exitCode) => {
             busy = false;
             if (exitCode !== 0) {
-                ToastService.showError("Wallpaper Span", output.trim() || "Failed to split wallpaper");
+                ToastService.showError("Failed to split wallpaper", output.trim());
                 if (doneCallback)
                     doneCallback(false);
                 return;
@@ -358,7 +364,7 @@ Singleton {
                 SessionData.setMonitorWallpaper(screenName, slicePath);
             }
             lastSpannedSource = mediaPath;
-            ToastService.showInfo("Wallpaper Span", `Spanned across ${lines.length} displays`);
+            ToastService.showInfo(`Spanned across ${lines.length} displays`);
             applied("span", mediaPath);
             _releaseInternalGuard();
             if (doneCallback)
@@ -408,9 +414,9 @@ Singleton {
     function clearCache(doneCallback) {
         Proc.runCommand("wallpaperSpan.clearCache", ["bash", scriptPath, "clear-cache", cacheDir], (output, exitCode) => {
             if (exitCode === 0) {
-                ToastService.showInfo("Wallpaper Span", "Cleared wallpaper span & thumbnail cache");
+                ToastService.showInfo("Cleared wallpaper span & thumbnail cache");
             } else {
-                ToastService.showError("Wallpaper Span", output.trim() || "Failed to clear cache");
+                ToastService.showError("Failed to clear cache", output.trim());
             }
             if (doneCallback)
                 doneCallback(exitCode === 0);

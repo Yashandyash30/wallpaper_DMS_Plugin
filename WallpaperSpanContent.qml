@@ -90,7 +90,7 @@ Item {
         Proc.runCommand("wallpaperSpan.scan", ["bash", SpanController.scriptPath, "scan", dir, recursiveScan ? "1" : "0"], (output, exitCode) => {
             scanning = false;
             if (exitCode !== 0) {
-                ToastService.showError("Wallpaper Span", "Failed to scan wallpaper folder");
+                ToastService.showError("Failed to scan wallpaper folder");
                 allItems = [];
                 rebuildFiltered();
                 return;
@@ -400,7 +400,6 @@ Item {
         anchors.margins: Theme.spacingM
         spacing: Theme.spacingS
 
-        // Section 1: Side-by-Side Visual Monitor Stage & Mode Bar
         StyledRect {
             id: monitorStage
             Layout.fillWidth: true
@@ -513,7 +512,6 @@ Item {
                             opacity: isActiveInStage ? 1.0 : 0.55
                             clip: true
 
-                            // Live wallpaper preview shifted visually to reflect vertical alignment offset
                             Image {
                                 width: parent.width
                                 height: parent.height
@@ -535,7 +533,6 @@ Item {
                                 visible: !monScreen.stagePreviewPath
                             }
 
-                            // Top-right vertical offset indicator badge
                             StyledRect {
                                 anchors.top: parent.top
                                 anchors.right: parent.right
@@ -556,7 +553,6 @@ Item {
                                 }
                             }
 
-                            // Top-left active target / LIVE badge
                             Row {
                                 anchors.top: parent.top
                                 anchors.left: parent.left
@@ -603,7 +599,6 @@ Item {
                                 }
                             }
 
-                            // Bottom label strip on monitor
                             Rectangle {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
@@ -635,7 +630,6 @@ Item {
                     }
                 }
 
-                // Bottom bar inside monitor stage: All Displays button + Auto-split toggle + Align button
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingS
@@ -691,7 +685,6 @@ Item {
             }
         }
 
-        // Section 2b: Compact Vertical Alignment Bar
         StyledRect {
             Layout.fillWidth: true
             Layout.preferredHeight: alignFlow.implicitHeight + Theme.spacingXS * 2
@@ -852,7 +845,6 @@ Item {
             }
         }
 
-        // Section 2c: Compact Live Video Playback Controls (visible when a video is active)
         StyledRect {
             id: liveBar
             Layout.fillWidth: true
@@ -943,7 +935,6 @@ Item {
             }
         }
 
-        // Section 3: Folder, Search & Filter Bar
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingS
@@ -1058,7 +1049,6 @@ Item {
             }
         }
 
-        // Section 4: Wallpaper Grid
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -1145,7 +1135,6 @@ Item {
                             onClicked: root.applyCardDefault(cellRoot)
                         }
 
-                        // Subtle badge on live videos and wide wallpapers
                         StyledRect {
                             anchors.top: parent.top
                             anchors.left: parent.left
@@ -1168,7 +1157,6 @@ Item {
                             }
                         }
 
-                        // Active checkmark
                         StyledRect {
                             anchors.top: parent.top
                             anchors.right: parent.right
@@ -1187,7 +1175,6 @@ Item {
                             }
                         }
 
-                        // Hover overlay: filename + Span / Same quick actions (when All Displays active)
                         Rectangle {
                             anchors.left: parent.left
                             anchors.right: parent.right

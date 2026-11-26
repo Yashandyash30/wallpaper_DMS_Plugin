@@ -9,16 +9,20 @@ import "SpanEngine.js" as SpanEngine
 PluginComponent {
     id: root
 
-    property var popoutService: null
-
     readonly property bool isLocked: (typeof IdleService !== "undefined" && IdleService.isShellLocked) ? true : false
     readonly property bool autoSplitExternal: pluginData?.autoSplitExternal === true
     readonly property bool videoPaused: pluginData?.videoPaused === true
     readonly property bool pauseOnNiriColumn: pluginData?.pauseOnNiriColumn !== false
     readonly property int restartIntervalMs: {
-        const mins = pluginData?.restartInterval;
-        const val = (typeof mins === "number" && !isNaN(mins)) ? mins : 60;
-        return val > 0 ? val * 60000 : 0;
+        const raw = pluginData?.restartInterval;
+        if (raw === undefined || raw === null || raw === "")
+            return 60 * 60000;
+        if (raw === "Disabled")
+            return 0;
+        const val = Number(raw);
+        if (!Number.isFinite(val))
+            return 60 * 60000;
+        return val > 0 ? Math.round(val * 60000) : 0;
     }
 
     property bool ready: false
@@ -265,7 +269,7 @@ PluginComponent {
         recoveryAttempts = attempts;
 
         if (attempt > maxRecoveryAttempts) {
-            ToastService.showError("Wallpaper Span", "Live wallpaper playback failed on " + monitor);
+            ToastService.showError("Live wallpaper playback failed on " + monitor);
             return;
         }
 

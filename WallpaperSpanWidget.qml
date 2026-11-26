@@ -10,7 +10,6 @@ PluginComponent {
     id: root
 
     layerNamespacePlugin: "wallpaper-span"
-    property var popoutService: null
 
     ccWidgetIcon: "panorama"
     ccWidgetPrimaryText: "Wallpaper Span"

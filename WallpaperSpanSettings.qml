@@ -173,11 +173,11 @@ PluginSettings {
         label: "Default Video Scaling"
         description: "How videos fill the display when aspect ratios differ"
         options: [
-            { "label": "Fill Screen (Crop)", "value": 1.0 },
-            { "label": "Balanced (50%)", "value": 0.5 },
-            { "label": "Fit Screen (Letterbox)", "value": 0.0 }
+            { "label": "Fill Screen (Crop)", "value": "1.0" },
+            { "label": "Balanced (50%)", "value": "0.5" },
+            { "label": "Fit Screen (Letterbox)", "value": "0.0" }
         ]
-        defaultValue: 1.0
+        defaultValue: "1.0"
     }
 
     SliderSetting {
@@ -195,13 +195,13 @@ PluginSettings {
         label: "Auto-Restart Playback"
         description: "Periodically restart mpvpaper processes to keep memory usage steady"
         options: [
-            { "label": "Disabled", "value": 0 },
-            { "label": "Every 30 minutes", "value": 30 },
-            { "label": "Every 1 hour", "value": 60 },
-            { "label": "Every 2 hours", "value": 120 },
-            { "label": "Every 4 hours", "value": 240 }
+            { "label": "Disabled", "value": "0" },
+            { "label": "Every 30 minutes", "value": "30" },
+            { "label": "Every 1 hour", "value": "60" },
+            { "label": "Every 2 hours", "value": "120" },
+            { "label": "Every 4 hours", "value": "240" }
         ]
-        defaultValue: 60
+        defaultValue: "60"
     }
 
     ToggleSetting {
@@ -316,7 +316,7 @@ PluginSettings {
                 onClicked: {
                     root.saveValue("monitorOffsets", {});
                     root.saveValue("bezelGapMm", 0);
-                    ToastService.showInfo("Wallpaper Span", "Reset display offsets and bezel gap");
+                    ToastService.showInfo("Reset display offsets and bezel gap");
                 }
             }
         }
