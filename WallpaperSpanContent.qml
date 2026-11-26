@@ -295,12 +295,6 @@ Item {
         }
     }
 
-    function previewUrlFor(path) {
-        if (!path || path.startsWith("#"))
-            return "";
-        return "file://" + path.split("/").map(s => encodeURIComponent(s)).join("/");
-    }
-
     function baseNameOf(path) {
         if (!path)
             return "";
@@ -512,16 +506,14 @@ Item {
                             opacity: isActiveInStage ? 1.0 : 0.55
                             clip: true
 
-                            Image {
+                            CachingImage {
                                 width: parent.width
                                 height: parent.height
                                 x: 0
                                 y: Math.max(-height * 0.45, Math.min(height * 0.45, -monScreen.offVal * Math.max(stageCanvas.fitScale, 0.25)))
-                                source: root.previewUrlFor(monScreen.stagePreviewPath)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: false
-                                sourceSize.width: 360
+                                imagePath: monScreen.stagePreviewPath
+                                maxCacheSize: 360
+                                animate: false
                                 visible: status === Image.Ready
                             }
 
@@ -638,7 +630,7 @@ Item {
                         text: root.monitors.length > 1 ? ("All (" + root.monitors.length + ")") : "All"
                         iconName: "desktop_windows"
                         buttonHeight: Theme.buttonHeightXXS
-                        minimumWidth: 78
+                        minimumWidth: Theme.navigationItemMinWidth
                         variant: root.selectedTarget === "all" ? "filled" : "tonal"
                         tooltipText: "Select all displays (Span / Same)"
                         onClicked: root.selectedTarget = "all"
@@ -676,7 +668,7 @@ Item {
                         text: "Align"
                         iconName: "vertical_align_center"
                         buttonHeight: Theme.buttonHeightXXS
-                        minimumWidth: 74
+                        minimumWidth: Theme.buttonMinWidth + Theme.spacingL
                         variant: (root.showAlignBar || root.hasAnyOffset()) ? "filled" : "tonal"
                         tooltipText: "Vertical alignment per display"
                         onClicked: root.showAlignBar = !root.showAlignBar
@@ -735,7 +727,7 @@ Item {
                                 text: root.formatOffset(alignChip.offVal)
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: alignChip.offVal !== 0 ? Theme.primary : Theme.onSurfaceVariant
-                                width: 46
+                                width: Theme.minimumTouchTargetSize
                                 horizontalAlignment: Text.AlignHCenter
                             }
 
@@ -743,7 +735,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↓10"
                                 buttonHeight: Theme.buttonHeightXXS
-                                minimumWidth: 34
+                                minimumWidth: Theme.buttonHeightXS
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper down 10 px"
                                 onClicked: root.nudgeOffset(alignChip.modelData.name, -10)
@@ -753,7 +745,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↓2"
                                 buttonHeight: Theme.buttonHeightXXS
-                                minimumWidth: 30
+                                minimumWidth: Theme.buttonHeightXXS
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper down 2 px"
                                 onClicked: root.nudgeOffset(alignChip.modelData.name, -2)
@@ -763,7 +755,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↑2"
                                 buttonHeight: Theme.buttonHeightXXS
-                                minimumWidth: 30
+                                minimumWidth: Theme.buttonHeightXXS
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper up 2 px"
                                 onClicked: root.nudgeOffset(alignChip.modelData.name, 2)
@@ -773,7 +765,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "↑10"
                                 buttonHeight: Theme.buttonHeightXXS
-                                minimumWidth: 34
+                                minimumWidth: Theme.buttonHeightXS
                                 variant: "tonal"
                                 tooltipText: "Move wallpaper up 10 px"
                                 onClicked: root.nudgeOffset(alignChip.modelData.name, 10)
@@ -808,7 +800,7 @@ Item {
                             text: root.localBezelGapMm + " mm"
                             font.pixelSize: Theme.fontSizeSmall
                             color: root.localBezelGapMm > 0 ? Theme.primary : Theme.onSurfaceVariant
-                            width: 40
+                            width: Theme.iconButtonSize
                             horizontalAlignment: Text.AlignHCenter
                         }
 
@@ -816,7 +808,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "-2"
                             buttonHeight: Theme.buttonHeightXXS
-                            minimumWidth: 28
+                            minimumWidth: Theme.buttonHeightXXS
                             variant: "tonal"
                             tooltipText: "Decrease physical bezel gap 2 mm"
                             onClicked: root.nudgeBezelGap(-2)
@@ -826,7 +818,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "+2"
                             buttonHeight: Theme.buttonHeightXXS
-                            minimumWidth: 28
+                            minimumWidth: Theme.buttonHeightXXS
                             variant: "tonal"
                             tooltipText: "Increase physical bezel gap 2 mm"
                             onClicked: root.nudgeBezelGap(2)
@@ -900,7 +892,7 @@ Item {
                 DButton {
                     text: liveBar.liveSettings.panscan >= 0.9 ? "Fill" : (liveBar.liveSettings.panscan <= 0.1 ? "Fit" : "50%")
                     buttonHeight: Theme.buttonHeightXXS
-                    minimumWidth: 44
+                    minimumWidth: Theme.buttonHeightS
                     variant: "tonal"
                     tooltipText: "Cycle video fill mode (Fill / Balance / Fit)"
                     onClicked: {
@@ -922,7 +914,7 @@ Item {
 
                 DSlider {
                     id: liveVolSlider
-                    Layout.preferredWidth: 96
+                    Layout.preferredWidth: Theme.navigationRailWidth
                     minimum: 0
                     maximum: 100
                     unit: "%"
@@ -940,7 +932,7 @@ Item {
             spacing: Theme.spacingS
 
             StyledRect {
-                Layout.preferredWidth: 170
+                Layout.preferredWidth: Theme.fieldDefaultWidth - Theme.spacingXL
                 Layout.preferredHeight: Theme.buttonHeightXS
                 radius: Theme.cornerRadius
                 color: Theme.chipSurface
@@ -1056,7 +1048,7 @@ Item {
             DGridView {
                 id: gridView
                 anchors.fill: parent
-                readonly property int cols: Math.max(2, Math.floor(width / 210))
+                readonly property int cols: Math.max(2, Math.floor(width / (Theme.fieldDefaultWidth + Theme.spacingS)))
                 readonly property bool showCardActions: root.selectedTarget === "all" && root.monitors.length > 1
                 cellWidth: width / cols
                 cellHeight: cellWidth * 0.62
@@ -1109,16 +1101,12 @@ Item {
                             id: cardHover
                         }
 
-                        Image {
+                        CachingImage {
                             id: cardPreview
                             anchors.fill: parent
-                            source: cellRoot.isVideo
-                                ? (cellRoot.thumbPath ? root.previewUrlFor(cellRoot.thumbPath) : "")
-                                : root.previewUrlFor(cellRoot.path)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: false
-                            sourceSize.width: 380
+                            imagePath: cellRoot.isVideo ? cellRoot.thumbPath : cellRoot.path
+                            maxCacheSize: 380
+                            animate: false
                         }
 
                         DIcon {
@@ -1207,7 +1195,7 @@ Item {
                                         Layout.fillWidth: true
                                         text: "Span"
                                         buttonHeight: Theme.buttonHeightXXS
-                                        minimumWidth: 42
+                                        minimumWidth: Theme.buttonHeightS
                                         variant: cellRoot.isWide ? "filled" : "tonal"
                                         onClicked: SpanController.applySpan(cellRoot.path, cellRoot.imgWidth, cellRoot.imgHeight, root.effectivePluginData)
                                     }
@@ -1216,7 +1204,7 @@ Item {
                                         Layout.fillWidth: true
                                         text: "Same"
                                         buttonHeight: Theme.buttonHeightXXS
-                                        minimumWidth: 42
+                                        minimumWidth: Theme.buttonHeightS
                                         variant: "tonal"
                                         onClicked: SpanController.applySameOnAll(cellRoot.path)
                                     }

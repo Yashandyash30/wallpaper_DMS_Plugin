@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import qs.Common
 import qs.Services
 import "SpanEngine.js" as SpanEngine

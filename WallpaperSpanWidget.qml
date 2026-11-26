@@ -30,9 +30,9 @@ PluginComponent {
         id: slideout
         modelData: root.parentScreen || Screen
         title: "Wallpaper Span"
-        slideoutWidth: 780
+        slideoutWidth: Theme.launcherWidthWide + Theme.spacingXL * 2
         expandable: true
-        expandedWidthValue: 1120
+        expandedWidthValue: Theme.launcherWidthLarge + Theme.fieldDefaultWidth
 
         content: Component {
             WallpaperSpanContent {
