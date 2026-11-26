@@ -387,3 +387,91 @@ function formatAspectLabel(w, h) {
     }
     return r >= 1 ? r.toFixed(1) + ":1" : "1:" + (1 / r).toFixed(1);
 }
+
+var VIDEO_EXT_RE = /\.(mp4|mkv|webm|mov|m4v|avi|flv|wmv)$/i;
+
+function isVideoPath(path) {
+    return typeof path === "string" && VIDEO_EXT_RE.test(path);
+}
+
+function formatMpvCrop(crop) {
+    if (!crop || crop.w <= 0 || crop.h <= 0)
+        return "";
+    return crop.w + "x" + crop.h + "+" + crop.x + "+" + crop.y;
+}
+
+function buildMpvArgs(monitor, videoPath, settings, cropGeom) {
+    var s = settings || {};
+    var opts = [
+        "loop",
+        "--hwdec-codecs=all",
+        "--vo=gpu",
+        "--gpu-api=auto",
+        "--gpu-context=auto",
+        "--profile=fast",
+        "--video-sync=display-resample",
+        "--interpolation=no",
+        "--scale=bilinear",
+        "--cscale=bilinear",
+        "--dscale=bilinear",
+        "--correct-downscaling=no",
+        "--linear-downscaling=no",
+        "--sigmoid-upscaling=no",
+        "--vd-lavc-threads=1",
+        "--cache=no",
+        "--demuxer-max-bytes=10M",
+        "--demuxer-readahead-secs=1",
+        "--vd-lavc-dr=yes",
+        "--opengl-pbo",
+        "--swapchain-depth=1",
+        "--no-audio-display",
+        "--no-osc",
+        "--no-osd-bar",
+        "--no-input-default-bindings",
+        "--no-input-cursor",
+        "--cursor-autohide=no",
+        "--no-keepaspect-window"
+    ];
+
+    var hwdec = s.hwdec || "auto";
+    if (hwdec !== "no")
+        opts.push("--hwdec=" + hwdec);
+
+    var panscan = (typeof s.panscan === "number" && !isNaN(s.panscan)) ? s.panscan : 1.0;
+    opts.push("--panscan=" + panscan);
+
+    var volume = (typeof s.volume === "number" && !isNaN(s.volume)) ? Math.max(0, Math.min(100, Math.round(s.volume))) : 0;
+    opts.push("--volume=" + volume);
+
+    if (cropGeom && typeof cropGeom === "string" && cropGeom.length > 0)
+        opts.push("--video-crop=" + cropGeom);
+
+    return ["mpvpaper", "-l", "background", "-o", opts.join(" "), monitor, videoPath];
+}
+
+function niriOutputHasColumn(monitorName, workspaces, windows) {
+    if (!monitorName || !workspaces || workspaces.length === 0)
+        return false;
+
+    var activeWs = null;
+    for (var i = 0; i < workspaces.length; i++) {
+        var ws = workspaces[i];
+        if (ws && ws.output === monitorName && ws.is_active) {
+            activeWs = ws;
+            break;
+        }
+    }
+    if (!activeWs)
+        return false;
+
+    var winList = windows || [];
+    for (var j = 0; j < winList.length; j++) {
+        var win = winList[j];
+        if (!win || win.workspace_id !== activeWs.id)
+            continue;
+        if (win.is_floating === true)
+            continue;
+        return true;
+    }
+    return false;
+}

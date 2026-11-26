@@ -2,7 +2,7 @@
     "$schema": "https://duxlabs.dev/schemas/plugin.json",
     "id": "wallpaperSpan",
     "name": "Wallpaper Span",
-    "description": "Multi-monitor wallpaper browser with automatic wide-wallpaper spanning, same-on-all, and per-display modes",
+    "description": "Multi-monitor image and live mpvpaper wallpaper browser with Spanright alignment, spanning, same-on-all, and per-display modes",
     "version": "1.0.0",
     "author": "Yashandyash30",
     "icon": "panorama",

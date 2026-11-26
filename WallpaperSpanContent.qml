@@ -28,12 +28,38 @@ Item {
     property var allItems: []
     property int wideCount: 0
     property int normalCount: 0
+    property int liveCount: 0
+    property var thumbMap: ({})
+    property var thumbQueue: []
+    property int activeThumbJobs: 0
+    property int thumbJobSeq: 0
 
     readonly property string configuredDir: pluginData?.wallpaperDir || "~/Pictures/Wallpapers"
     readonly property string resolvedDir: Paths.expandTilde(configuredDir)
     readonly property bool recursiveScan: pluginData?.recursive !== false
     readonly property bool autoSplitWide: pluginData?.autoSplitWide !== false
     readonly property real wideThreshold: SpanController.thresholdFromData(pluginData)
+    readonly property var monitorVideos: pluginData?.monitorVideos || ({})
+    readonly property bool videoPaused: pluginData?.videoPaused === true
+    readonly property bool pauseOnNiriColumn: pluginData?.pauseOnNiriColumn !== false
+    readonly property string spannedVideoSource: pluginData?.spannedVideoSource || ""
+    readonly property string activeLivePath: activeTargetVideo()
+
+    function isNiriColumnPaused(screenName) {
+        if (!pauseOnNiriColumn || !CompositorService.isNiri || typeof NiriService === "undefined")
+            return false;
+        return SpanEngine.niriOutputHasColumn(screenName, NiriService.allWorkspaces, NiriService.windows);
+    }
+
+    function anyTargetNiriPaused() {
+        if (selectedTarget !== "all")
+            return isNiriColumnPaused(selectedTarget);
+        for (let i = 0; i < monitors.length; i++) {
+            if (monitorVideos?.[monitors[i].name] && isNiriColumnPaused(monitors[i].name))
+                return true;
+        }
+        return false;
+    }
     readonly property var effectivePluginData: Object.assign({}, pluginData || {}, {
         monitorOffsets: localOffsets,
         bezelGapMm: localBezelGapMm
@@ -75,16 +101,19 @@ Item {
                 const line = lines[i].trim();
                 if (!line)
                     continue;
-                const firstTab = line.indexOf("\t");
-                const secondTab = firstTab >= 0 ? line.indexOf("\t", firstTab + 1) : -1;
-                if (firstTab <= 0 || secondTab <= firstTab)
+                const t1 = line.indexOf("\t");
+                const t2 = t1 >= 0 ? line.indexOf("\t", t1 + 1) : -1;
+                const t3 = t2 >= 0 ? line.indexOf("\t", t2 + 1) : -1;
+                if (t1 <= 0 || t2 <= t1 || t3 <= t2)
                     continue;
-                const w = parseInt(line.slice(0, firstTab), 10) || 0;
-                const h = parseInt(line.slice(firstTab + 1, secondTab), 10) || 0;
-                const path = line.slice(secondTab + 1);
+                const mediaType = line.slice(0, t1);
+                const w = parseInt(line.slice(t1 + 1, t2), 10) || 0;
+                const h = parseInt(line.slice(t2 + 1, t3), 10) || 0;
+                const path = line.slice(t3 + 1);
                 const slash = path.lastIndexOf("/");
                 const name = slash >= 0 ? path.slice(slash + 1) : path;
                 parsed.push({
+                    mediaType: mediaType === "video" ? "video" : "image",
                     path: path,
                     name: name,
                     width: w,
@@ -101,8 +130,11 @@ Item {
     function recountTypes() {
         let wCount = 0;
         let nCount = 0;
+        let lCount = 0;
         const threshold = wideThreshold;
         for (let i = 0; i < allItems.length; i++) {
+            if (allItems[i].mediaType === "video")
+                lCount++;
             if (SpanEngine.isWideImage(allItems[i].width, allItems[i].height, threshold))
                 wCount++;
             else
@@ -110,6 +142,7 @@ Item {
         }
         wideCount = wCount;
         normalCount = nCount;
+        liveCount = lCount;
     }
 
     function rebuildFiltered() {
@@ -125,16 +158,61 @@ Item {
                 continue;
             if (filterMode === "normal" && isWide)
                 continue;
+            if (filterMode === "live" && it.mediaType !== "video")
+                continue;
             if (q && it.name.toLowerCase().indexOf(q) === -1 && it.path.toLowerCase().indexOf(q) === -1)
                 continue;
 
             filteredModel.append({
+                mediaType: it.mediaType,
                 path: it.path,
                 name: it.name,
                 imgWidth: it.width,
                 imgHeight: it.height,
                 aspect: it.aspect,
-                isWide: isWide
+                isWide: isWide,
+                thumbPath: thumbMap[it.path] || ""
+            });
+        }
+    }
+
+    function requestVideoThumb(videoPath) {
+        if (!videoPath || thumbMap[videoPath] || (SpanController.capsChecked && !SpanController.hasFfmpeg))
+            return;
+        if (thumbQueue.indexOf(videoPath) !== -1)
+            return;
+        const next = thumbQueue.slice();
+        next.push(videoPath);
+        thumbQueue = next;
+        drainThumbQueue();
+    }
+
+    function drainThumbQueue() {
+        if (!SpanController.capsChecked || !SpanController.hasFfmpeg)
+            return;
+        while (activeThumbJobs < 2 && thumbQueue.length > 0) {
+            const next = thumbQueue.slice();
+            const vp = next.shift();
+            thumbQueue = next;
+            if (!vp || thumbMap[vp])
+                continue;
+            activeThumbJobs++;
+            thumbJobSeq++;
+            Proc.runCommand("wallpaperSpan.vthumb." + thumbJobSeq, ["bash", SpanController.scriptPath, "video-thumb", vp, SpanController.cacheDir], (output, exitCode) => {
+                activeThumbJobs = Math.max(0, activeThumbJobs - 1);
+                const outPath = exitCode === 0 ? output.trim().split("\n")[0] : "";
+                if (outPath) {
+                    const updated = Object.assign({}, root.thumbMap);
+                    updated[vp] = outPath;
+                    root.thumbMap = updated;
+                    for (let k = 0; k < filteredModel.count; k++) {
+                        if (filteredModel.get(k).path === vp) {
+                            filteredModel.setProperty(k, "thumbPath", outPath);
+                            break;
+                        }
+                    }
+                }
+                root.drainThumbQueue();
             });
         }
     }
@@ -208,8 +286,10 @@ Item {
         interval: 220
         repeat: false
         onTriggered: {
+            if (root.spannedVideoSource)
+                return;
             const src = SpanController.lastSpannedSource || root.pluginData?.lastSpannedSource || "";
-            if (src && root.monitors.length > 1 && SessionData.perMonitorWallpaper) {
+            if (src && root.monitors.length > 1 && SessionData.perMonitorWallpaper && !SpanEngine.isVideoPath(src)) {
                 SpanController.applySpan(src, 0, 0, root.effectivePluginData);
             }
         }
@@ -221,11 +301,44 @@ Item {
         return "file://" + path.split("/").map(s => encodeURIComponent(s)).join("/");
     }
 
+    function baseNameOf(path) {
+        if (!path)
+            return "";
+        const s = path.lastIndexOf("/");
+        return s >= 0 ? path.slice(s + 1) : path;
+    }
+
+    function activeTargetVideo() {
+        if (selectedTarget === "all") {
+            if (spannedVideoSource)
+                return spannedVideoSource;
+            for (let i = 0; i < monitors.length; i++) {
+                const vp = monitorVideos?.[monitors[i].name];
+                if (vp)
+                    return vp;
+            }
+            return "";
+        }
+        return monitorVideos?.[selectedTarget] || "";
+    }
+
     function isActiveSource(path) {
+        if (selectedTarget === "all") {
+            if (spannedVideoSource && spannedVideoSource === path)
+                return true;
+            if (monitors.length > 0 && monitors.every(m => monitorVideos?.[m.name] === path))
+                return true;
+            if (Object.keys(monitorVideos || {}).length > 0)
+                return false;
+            if (SpanController.lastSpannedSource && SpanController.lastSpannedSource === path)
+                return true;
+            return !SessionData.perMonitorWallpaper && SessionData.wallpaperPath === path;
+        }
+        const liveTarget = monitorVideos?.[selectedTarget];
+        if (liveTarget)
+            return liveTarget === path;
         if (SpanController.lastSpannedSource && SpanController.lastSpannedSource === path)
             return true;
-        if (selectedTarget === "all")
-            return !SessionData.perMonitorWallpaper && SessionData.wallpaperPath === path;
         return SessionData.perMonitorWallpaper && SessionData.getMonitorWallpaper(selectedTarget) === path;
     }
 
@@ -238,6 +351,7 @@ Item {
     onPluginDataChanged: syncOffsetsFromPluginData()
 
     Component.onCompleted: {
+        SpanController.bindPluginService(pluginService);
         syncOffsetsFromPluginData();
         refreshMonitors();
         scanFolder();
@@ -250,6 +364,10 @@ Item {
                 root.saveSetting("lastSpannedSource", sourcePath);
             else if (mode === "same")
                 root.saveSetting("lastSpannedSource", "");
+        }
+        function onCapsCheckedChanged() {
+            if (SpanController.hasFfmpeg)
+                root.drainThumbQueue();
         }
     }
 
@@ -366,11 +484,22 @@ Item {
                                 root.localOffsets;
                                 return root.offsetFor(modelData.name);
                             }
+                            readonly property string liveVideo: root.monitorVideos?.[modelData.name] || ""
                             readonly property string currentWp: {
                                 SessionData.wallpaperPath;
                                 SessionData.monitorWallpapers;
                                 SessionData.perMonitorWallpaper;
                                 return SessionData.getMonitorWallpaper(modelData.name) || "";
+                            }
+                            readonly property string stagePreviewPath: currentWp || (liveVideo ? (root.thumbMap?.[liveVideo] || "") : "")
+
+                            Component.onCompleted: {
+                                if (liveVideo && !stagePreviewPath)
+                                    root.requestVideoThumb(liveVideo);
+                            }
+                            onLiveVideoChanged: {
+                                if (liveVideo && !stagePreviewPath)
+                                    root.requestVideoThumb(liveVideo);
                             }
 
                             x: stageCanvas.originX + stageCanvas.monitorXOffset(index) + index * stageCanvas.gapPx
@@ -390,7 +519,7 @@ Item {
                                 height: parent.height
                                 x: 0
                                 y: Math.max(-height * 0.45, Math.min(height * 0.45, -monScreen.offVal * Math.max(stageCanvas.fitScale, 0.25)))
-                                source: root.previewUrlFor(monScreen.currentWp)
+                                source: root.previewUrlFor(monScreen.stagePreviewPath)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: false
@@ -400,10 +529,10 @@ Item {
 
                             DIcon {
                                 anchors.centerIn: parent
-                                name: "image"
+                                name: monScreen.liveVideo ? "movie" : "image"
                                 size: Theme.iconSize
                                 color: Theme.onSurfaceVariant
-                                visible: !monScreen.currentWp
+                                visible: !monScreen.stagePreviewPath
                             }
 
                             // Top-right vertical offset indicator badge
@@ -427,24 +556,50 @@ Item {
                                 }
                             }
 
-                            // Top-left active target badge
-                            StyledRect {
+                            // Top-left active target / LIVE badge
+                            Row {
                                 anchors.top: parent.top
                                 anchors.left: parent.left
                                 anchors.margins: 5
-                                width: targetTag.implicitWidth + 10
-                                height: 18
-                                radius: 9
-                                color: Theme.primary
-                                visible: monScreen.isTargeted
+                                spacing: 4
 
-                                StyledText {
-                                    id: targetTag
-                                    anchors.centerIn: parent
-                                    text: "TARGET"
-                                    font.pixelSize: 9
-                                    font.weight: Font.Bold
-                                    color: Theme.onPrimary
+                                StyledRect {
+                                    width: targetTag.implicitWidth + 10
+                                    height: 18
+                                    radius: 9
+                                    color: Theme.primary
+                                    visible: monScreen.isTargeted
+
+                                    StyledText {
+                                        id: targetTag
+                                        anchors.centerIn: parent
+                                        text: "TARGET"
+                                        font.pixelSize: 9
+                                        font.weight: Font.Bold
+                                        color: Theme.onPrimary
+                                    }
+                                }
+
+                                StyledRect {
+                                    readonly property bool colPaused: {
+                                        NiriService.allWorkspaces;
+                                        NiriService.windows;
+                                        return monScreen.liveVideo !== "" && !root.videoPaused && root.isNiriColumnPaused(monScreen.modelData.name);
+                                    }
+                                    width: stageLiveTag.implicitWidth + 10
+                                    height: 18
+                                    radius: 9
+                                    color: (root.videoPaused || colPaused) ? Theme.secondaryContainer : Theme.primary
+                                    visible: monScreen.liveVideo !== ""
+
+                                    StyledText {
+                                        id: stageLiveTag
+                                        anchors.centerIn: parent
+                                        text: root.videoPaused ? "PAUSED" : (parent.colPaused ? "PAUSED · COL" : "LIVE")
+                                        font.pixelSize: 9
+                                        font.weight: Font.Bold
+                                        color: (root.videoPaused || parent.colPaused) ? Theme.onSecondaryContainer : Theme.onPrimary
+                                    }
                                 }
                             }
 
@@ -696,6 +851,97 @@ Item {
             }
         }
 
+        // Section 2c: Compact Live Video Playback Controls (visible when a video is active)
+        StyledRect {
+            id: liveBar
+            Layout.fillWidth: true
+            Layout.preferredHeight: 38
+            visible: root.activeLivePath !== ""
+            radius: Theme.cornerRadius
+            color: Theme.cardSurface
+            border.width: Theme.outlineWidth
+            border.color: Theme.outlineVariant
+
+            readonly property var liveSettings: SpanController.effectiveVideoSettings(root.pluginData, root.activeLivePath)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingS
+                anchors.rightMargin: Theme.spacingS
+                spacing: Theme.spacingXS
+
+                DIcon {
+                    name: "movie"
+                    size: Theme.iconSizeSmall
+                    color: Theme.primary
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: {
+                        NiriService.allWorkspaces;
+                        NiriService.windows;
+                        const suffix = root.videoPaused ? " (Paused)" : (root.anyTargetNiriPaused() ? " (Paused · column active)" : "");
+                        return root.baseNameOf(root.activeLivePath) + suffix;
+                    }
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.Medium
+                    color: Theme.onSurface
+                    elide: Text.ElideMiddle
+                }
+
+                DActionButton {
+                    iconName: root.videoPaused ? "play_arrow" : "pause"
+                    buttonSize: 28
+                    tooltipText: root.videoPaused ? "Resume live wallpaper" : "Pause live wallpaper"
+                    onClicked: SpanController.setVideosPaused(!root.videoPaused)
+                }
+
+                DActionButton {
+                    iconName: "stop"
+                    buttonSize: 28
+                    tooltipText: root.selectedTarget === "all" ? "Stop live wallpaper on all displays" : ("Stop live wallpaper on " + root.selectedTarget)
+                    onClicked: SpanController.stopVideos(root.selectedTarget === "all" ? null : [root.selectedTarget])
+                }
+
+                DButton {
+                    text: liveBar.liveSettings.panscan >= 0.9 ? "Fill" : (liveBar.liveSettings.panscan <= 0.1 ? "Fit" : "50%")
+                    buttonHeight: 24
+                    minimumWidth: 44
+                    variant: "tonal"
+                    tooltipText: "Cycle video fill mode (Fill / Balance / Fit)"
+                    onClicked: {
+                        const cur = liveBar.liveSettings.panscan;
+                        const next = cur >= 0.9 ? 0.0 : (cur <= 0.1 ? 0.5 : 1.0);
+                        SpanController.updateVideoSetting(root.activeLivePath, "panscan", next, root.pluginData);
+                    }
+                }
+
+                DActionButton {
+                    iconName: liveBar.liveSettings.volume > 0 ? "volume_up" : "volume_off"
+                    buttonSize: 28
+                    tooltipText: liveBar.liveSettings.volume > 0 ? "Mute video" : "Unmute video (25%)"
+                    onClicked: {
+                        const nextVol = liveBar.liveSettings.volume > 0 ? 0 : 25;
+                        SpanController.updateVideoSetting(root.activeLivePath, "volume", nextVol, root.pluginData);
+                    }
+                }
+
+                DSlider {
+                    id: liveVolSlider
+                    Layout.preferredWidth: 96
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    wheelEnabled: false
+                    value: Math.round(liveBar.liveSettings.volume || 0)
+                    onSliderDragFinished: function(finalValue) {
+                        SpanController.updateVideoSetting(root.activeLivePath, "volume", Math.round(finalValue), root.pluginData);
+                    }
+                }
+            }
+        }
+
         // Section 3: Folder, Search & Filter Bar
         RowLayout {
             Layout.fillWidth: true
@@ -776,7 +1022,8 @@ Item {
                         model: [
                             { id: "all", label: "All (" + (root.wideCount + root.normalCount) + ")" },
                             { id: "wide", label: "Wide (" + root.wideCount + ")" },
-                            { id: "normal", label: "Normal (" + root.normalCount + ")" }
+                            { id: "normal", label: "Normal (" + root.normalCount + ")" },
+                            { id: "live", label: "Live (" + root.liveCount + ")" }
                         ]
 
                         StyledRect {
@@ -829,20 +1076,31 @@ Item {
 
                 delegate: Item {
                     id: cellRoot
+                    required property string mediaType
                     required property string path
                     required property string name
                     required property int imgWidth
                     required property int imgHeight
                     required property string aspect
                     required property bool isWide
+                    required property string thumbPath
+
+                    readonly property bool isVideo: mediaType === "video"
 
                     width: gridView.cellWidth
                     height: gridView.cellHeight
+
+                    Component.onCompleted: {
+                        if (isVideo && !thumbPath)
+                            root.requestVideoThumb(path);
+                    }
 
                     readonly property bool isCurrent: {
                         SessionData.wallpaperPath;
                         SessionData.monitorWallpapers;
                         SpanController.lastSpannedSource;
+                        root.monitorVideos;
+                        root.spannedVideoSource;
                         return root.isActiveSource(path);
                     }
 
@@ -861,21 +1119,32 @@ Item {
                         }
 
                         Image {
+                            id: cardPreview
                             anchors.fill: parent
-                            source: root.previewUrlFor(cellRoot.path)
+                            source: cellRoot.isVideo
+                                ? (cellRoot.thumbPath ? root.previewUrlFor(cellRoot.thumbPath) : "")
+                                : root.previewUrlFor(cellRoot.path)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             cache: false
                             sourceSize.width: 380
                         }
 
+                        DIcon {
+                            anchors.centerIn: parent
+                            name: "movie"
+                            size: 28
+                            color: Theme.onSurfaceVariant
+                            visible: cellRoot.isVideo && cardPreview.status !== Image.Ready
+                        }
+
                         StateLayer {
                             anchors.fill: parent
-                            tooltipText: cellRoot.name + " (" + cellRoot.imgWidth + "×" + cellRoot.imgHeight + ")"
+                            tooltipText: cellRoot.name + (cellRoot.imgWidth > 0 ? (" (" + cellRoot.imgWidth + "×" + cellRoot.imgHeight + ")") : "")
                             onClicked: root.applyCardDefault(cellRoot)
                         }
 
-                        // Subtle badge only on wide wallpapers
+                        // Subtle badge on live videos and wide wallpapers
                         StyledRect {
                             anchors.top: parent.top
                             anchors.left: parent.left
@@ -884,12 +1153,14 @@ Item {
                             height: 18
                             radius: Theme.cornerRadiusS
                             color: Theme.primary
-                            visible: cellRoot.isWide
+                            visible: cellRoot.isWide || cellRoot.isVideo
 
                             StyledText {
                                 id: badgeText
                                 anchors.centerIn: parent
-                                text: "WIDE · " + cellRoot.aspect
+                                text: cellRoot.isVideo
+                                    ? (cellRoot.isWide && cellRoot.aspect ? ("LIVE · " + cellRoot.aspect) : "LIVE")
+                                    : ("WIDE · " + cellRoot.aspect)
                                 font.pixelSize: 9
                                 font.weight: Font.Bold
                                 color: Theme.onPrimary

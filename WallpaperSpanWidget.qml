@@ -14,7 +14,12 @@ PluginComponent {
 
     ccWidgetIcon: "panorama"
     ccWidgetPrimaryText: "Wallpaper Span"
-    ccWidgetSecondaryText: SessionData.perMonitorWallpaper ? "Per-display / Spanned" : "Same on all"
+    ccWidgetSecondaryText: {
+        const mv = pluginData?.monitorVideos || ({});
+        if (Object.keys(mv).length > 0)
+            return pluginData?.videoPaused ? "Live (Paused)" : "Live Wallpaper";
+        return SessionData.perMonitorWallpaper ? "Per-display / Spanned" : "Same on all";
+    }
     ccWidgetIsToggle: false
     onCcWidgetToggled: slideout.toggle()
 
